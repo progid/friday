@@ -8,13 +8,19 @@ import sys
 import os
 
 __author__ = "Igor Terletskiy"
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __license__ = "MIT"
 
 def getJSXFrom(filepath):
 	file = open(filepath, 'r+')
 	content = file.read()
-	print(content, '\n\n\n')
+	# print('\n' + filepath + '\n')
+	tempStr = ''
+	deep = 0
+	result = []
+	for i in range(len(content)):
+		s = content[i]
+		if s == '<' and :
 
 def createJSXDictionary(filelist):
 	dictionaryJSX = {}
