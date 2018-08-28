@@ -11,16 +11,50 @@ __author__ = "Igor Terletskiy"
 __version__ = "0.1.1"
 __license__ = "MIT"
 
+def addSymbols(start, end):
+	temp = set()
+	for i in range(ord(start), ord(end)+1):
+		temp.add(chr(i))
+	return temp
+
+symbols = {
+	'startTag': {'<'},
+	'endTag': {'/', '>'},
+	'iteruptions': {'\n', ' ', '\t', '\r', '\b'},
+	'stringLiterals': {'\'', '"', '`'},
+	'startExpressionLiteral': {'{'},
+	'endExpressionLiteral': {'}'}
+	'assign': {'='}
+	'alphabet': addSymbols('0', '9')
+	 | addSymbols('a', 'z')
+	 | addSymbols('A', 'Z')
+	 | addSymbols('а', 'я')
+	 | addSymbols('А', 'Я')
+	 | {'-', '_', 'ё', 'Ё', 'є', 'Є', 'і', 'І', 'ї', 'Ї', 'ґ', 'Ґ'}
+}
+
 def getJSXFrom(filepath):
 	file = open(filepath, 'r+')
 	content = file.read()
 	# print('\n' + filepath + '\n')
 	tempStr = ''
-	deep = 0
+	writable = False
+	closingTagRequest = False
 	result = []
 	for i in range(len(content)):
 		s = content[i]
-		if s == '<' and :
+		t = symbols
+		if s in t.startTag and not writable:
+			writable = True
+		if s in t.endTag and writable:
+			if closingTagRequest:
+				if s in t.iteruptions
+			if s == '/' and not closingTagRequest:
+				closingTagRequest = True
+			writable = False
+		if writable:
+			tempStr += s
+
 
 def createJSXDictionary(filelist):
 	dictionaryJSX = {}
