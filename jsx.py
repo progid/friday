@@ -19,12 +19,13 @@ def addSymbols(start, end):
 
 symbols = {
 	'startTag': {'<'},
+	'common': {'\\'},
 	'endTag': {'/', '>'},
 	'iteruptions': {'\n', ' ', '\t', '\r', '\b'},
 	'stringLiterals': {'\'', '"', '`'},
 	'startExpressionLiteral': {'{'},
-	'endExpressionLiteral': {'}'}
-	'assign': {'='}
+	'endExpressionLiteral': {'}'},
+	'assign': {'='},
 	'alphabet': addSymbols('0', '9')
 	 | addSymbols('a', 'z')
 	 | addSymbols('A', 'Z')
@@ -33,28 +34,71 @@ symbols = {
 	 | {'-', '_', 'ё', 'Ё', 'є', 'Є', 'і', 'І', 'ї', 'Ї', 'ґ', 'Ґ'}
 }
 
+print(symbols['alphabet'])
+
 def getJSXFrom(filepath):
 	file = open(filepath, 'r+')
 	content = file.read()
+	result = findJSX(content)
+	return result
+
+def findJSX(content):
 	# print('\n' + filepath + '\n')
 	tempStr = ''
 	writable = False
 	closingTagRequest = False
 	result = []
+	propsDeep = 0
+	propsStartSymbol = ''
+	propsEndSymbol = ''
+	isItExpression = False
+	isItString = False
+	isItPropsValue = False
+	stringScreening = False
 	for i in range(len(content)):
+
 		s = content[i]
 		t = symbols
-		if s in t.startTag and not writable:
-			writable = True
-		if s in t.endTag and writable:
-			if closingTagRequest:
-				if s in t.iteruptions
-			if s == '/' and not closingTagRequest:
-				closingTagRequest = True
-			writable = False
-		if writable:
-			tempStr += s
 
+		if writable:
+			if isItPropsValue:
+				if isItString:
+					if 
+				elif isItExpression:
+				else:
+					if s in t['stringLiterals']:
+						propsStartSymbol = s
+						propsEndSymbol = s
+						isItString = True
+					if s in t['startExpressionLiteral']:
+						isItExpression = True
+						propsStartSymbol = s
+						propsEndSymbol = '}'
+				continue
+
+			if s in t['iteruptions']:
+				if len(tempStr) > 0:
+					result.append(tempStr)
+					tempStr = ''
+				continue
+			if s in t['alphabet']:
+				tempStr += s
+				continue
+			elif s in t['assign']:
+				isItPropsValue = True
+				result.append(tempStr)
+				result.append('=')
+				tempStr = ''
+
+			if s in t['endTag']:
+				if closingTagRequest and s != '>':
+					writable = False
+					tempStr = ''
+					continue
+				if s == '/' and not closingTagRequest:
+					closingTagRequest = True
+		elif s in t['startTag']:
+			writable = True
 
 def createJSXDictionary(filelist):
 	dictionaryJSX = {}
