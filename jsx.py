@@ -6,6 +6,7 @@ Module Docstring
 import re
 import sys
 import os
+import json
 
 __author__ = "Igor Terletskiy"
 __version__ = "0.1.1"
@@ -47,6 +48,7 @@ def findJSX(content):
 	tempStr = ''
 	writable = False
 	closingTagRequest = False
+	tag = []
 	result = []
 	propsDeep = 0
 	propsStartSymbol = ''
@@ -61,24 +63,52 @@ def findJSX(content):
 		t = symbols
 
 		if writable:
+			if stringScreening:
+				tempStr += s
+				stringScreening = False
+				continue
+			if closingTagRequest and s != '>':
+				writable = False
+				closingTagRequest = False
+				tempStr = ''
+				tag = []
+				continue
 			if isItPropsValue:
 				if isItString:
-					if 
+					if s in t['common']:
+						stringScreening = True
+					elif s == propsEndSymbol:
+						isItString = False
+						isItPropsValue = False
+					tempStr += s
 				elif isItExpression:
+					if s in t['common']:
+						stringScreening = True
+					elif s == propsStartSymbol:
+						propsDeep += 1
+					elif s == propsEndSymbol:
+						propsDeep -= 1
+					if propsDeep == 0:
+						isItExpression = False
+						isItPropsValue = False
+					tempStr += s
 				else:
 					if s in t['stringLiterals']:
 						propsStartSymbol = s
 						propsEndSymbol = s
 						isItString = True
+						tempStr += s
 					if s in t['startExpressionLiteral']:
 						isItExpression = True
 						propsStartSymbol = s
 						propsEndSymbol = '}'
+						propsDeep += 1
+						tempStr += s
 				continue
 
 			if s in t['iteruptions']:
 				if len(tempStr) > 0:
-					result.append(tempStr)
+					tag.append(tempStr)
 					tempStr = ''
 				continue
 			if s in t['alphabet']:
@@ -86,19 +116,28 @@ def findJSX(content):
 				continue
 			elif s in t['assign']:
 				isItPropsValue = True
-				result.append(tempStr)
-				result.append('=')
+				tag.append(tempStr)
+				tag.append('=')
 				tempStr = ''
+				continue
 
 			if s in t['endTag']:
-				if closingTagRequest and s != '>':
+				if s == '>':
+					tag.append(tempStr)
+					result.append(tag)
+					tag = []
 					writable = False
+					closingTagRequest = False
 					tempStr = ''
 					continue
 				if s == '/' and not closingTagRequest:
 					closingTagRequest = True
+					continue
+			tag = []
+			writable = False
 		elif s in t['startTag']:
 			writable = True
+	return result
 
 def createJSXDictionary(filelist):
 	dictionaryJSX = {}
@@ -121,7 +160,12 @@ def main():
 	extentions = ['js']
 	filesList = getListOfFiles(directories, extentions)
 	JSXDictionary = createJSXDictionary(filesList)
-	
+
+	file = open('out.txt', 'w+')
+	file.seek(0)
+	file.write(json.dumps(JSXDictionary))
+	file.truncate();
+	file.close()
 
 
 if __name__ == "__main__":
