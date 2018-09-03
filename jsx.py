@@ -9,7 +9,7 @@ import os
 import json
 
 __author__ = "Igor Terletskiy"
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 __license__ = "MIT"
 
 def addSymbols(start, end):
@@ -32,7 +32,7 @@ symbols = {
 	 | addSymbols('A', 'Z')
 	 | addSymbols('а', 'я')
 	 | addSymbols('А', 'Я')
-	 | {'-', '_', 'ё', 'Ё', 'є', 'Є', 'і', 'І', 'ї', 'Ї', 'ґ', 'Ґ'}
+	 | {'-', '_', 'ё', 'Ё', 'є', 'Є', 'і', 'І', 'ї', 'Ї', 'ґ', 'Ґ', '/'}
 }
 
 print(symbols['alphabet'])
@@ -134,6 +134,7 @@ def findJSX(content):
 					closingTagRequest = True
 					continue
 			tag = []
+			tempStr = ''
 			writable = False
 		elif s in t['startTag']:
 			writable = True
@@ -155,17 +156,19 @@ def getListOfFiles(dir, extentions):
 						list.append(root + '/' + filename)
 	return list
 
+def logJsonToFile(JsonData, filepath = 'out.txt'):
+	file = open(filepath, 'w+')
+	file.seek(0)
+	file.write(json.dumps(JsonData))
+	file.truncate();
+	file.close()
+
 def main():
 	directories = sys.argv[1:] if len(sys.argv) > 1 else ['.']
 	extentions = ['js']
 	filesList = getListOfFiles(directories, extentions)
 	JSXDictionary = createJSXDictionary(filesList)
-
-	file = open('out.txt', 'w+')
-	file.seek(0)
-	file.write(json.dumps(JSXDictionary))
-	file.truncate();
-	file.close()
+	logJsonToFile(JSXDictionary)
 
 
 if __name__ == "__main__":
