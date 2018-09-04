@@ -35,7 +35,40 @@ symbols = {
 	 | {'-', '_', 'ё', 'Ё', 'є', 'Є', 'і', 'І', 'ї', 'Ї', 'ґ', 'Ґ', '/'}
 }
 
-print(symbols['alphabet'])
+# def dependencyAnalyzer:
+
+def clearArray(array):
+	if '' in array:
+		array.remove('')
+		return clearArray(array)
+	return array
+
+def buildDictFromArray(array, generatedDict=dict()):
+	if '=' in array:
+		pos = array.index('=')
+		generatedDict[array[pos-1]] = array[pos+1]
+		array[pos-1] = ''
+		array[pos] = ''
+		array[pos + 1] = ''
+		return buildDictFromArray(array, generatedDict)
+	clearArray(array)
+	return generatedDict
+
+def prepareJSXDictionary(dictionary):
+	result = {}
+	for key in dictionary:
+		if len(dictionary[key]):
+			result[key] = dictionary[key]
+	for key in result:
+		currentItem = result[key]
+		temp = []
+		for i in range(len(currentItem)):
+			temp.append({
+				'tagName': currentItem[i][0],
+				'props': dict(buildDictFromArray(currentItem[i], {}))
+			})
+		result[key] = temp
+	return result;
 
 def getJSXFrom(filepath):
 	file = open(filepath, 'r+')
@@ -44,7 +77,6 @@ def getJSXFrom(filepath):
 	return result
 
 def findJSX(content):
-	# print('\n' + filepath + '\n')
 	tempStr = ''
 	writable = False
 	closingTagRequest = False
@@ -167,8 +199,9 @@ def main():
 	directories = sys.argv[1:] if len(sys.argv) > 1 else ['.']
 	extentions = ['js']
 	filesList = getListOfFiles(directories, extentions)
-	JSXDictionary = createJSXDictionary(filesList)
-	logJsonToFile(JSXDictionary)
+	rawJSXDictionary = createJSXDictionary(filesList)
+	completeJSXDictionary = prepareJSXDictionary(rawJSXDictionary)
+	logJsonToFile(completeJSXDictionary)
 
 
 if __name__ == "__main__":
