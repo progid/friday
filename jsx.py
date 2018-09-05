@@ -32,7 +32,7 @@ symbols = {
 	 | addSymbols('A', 'Z')
 	 | addSymbols('а', 'я')
 	 | addSymbols('А', 'Я')
-	 | {'-', '_', 'ё', 'Ё', 'є', 'Є', 'і', 'І', 'ї', 'Ї', 'ґ', 'Ґ', '/'}
+	 | {'-', '_', '/', '{', 'ё', 'Ё', 'є', 'Є', 'і', 'І', 'ї', 'Ї', 'ґ', 'Ґ'}
 }
 
 # def dependencyAnalyzer:
@@ -43,10 +43,10 @@ def clearArray(array):
 		return clearArray(array)
 	return array
 
-def buildDictFromArray(array, generatedDict=dict()):
+def buildDictFromArray(array, generatedDict={}):
 	if '=' in array:
 		pos = array.index('=')
-		generatedDict[array[pos-1]] = array[pos+1]
+		generatedDict[array[pos - 1]] = array[pos + 1]
 		array[pos-1] = ''
 		array[pos] = ''
 		array[pos + 1] = ''
@@ -65,9 +65,15 @@ def prepareJSXDictionary(dictionary):
 		for i in range(len(currentItem)):
 			temp.append({
 				'tagName': currentItem[i][0],
-				'props': dict(buildDictFromArray(currentItem[i], {}))
+				'props': dict(buildDictFromArray(currentItem[i], {})),
+				'children': []
 			})
 		result[key] = temp
+	for key in result:
+		currentItem = result[key]
+		nesting = []
+		for i in range(len())
+
 	return result;
 
 def getJSXFrom(filepath):
