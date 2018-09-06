@@ -54,6 +54,15 @@ def buildDictFromArray(array, generatedDict={}):
 	clearArray(array)
 	return generatedDict
 
+def makeNested(mapArray, structureArray, closeTagName, complete):
+	if not len(array):
+		return where
+	element = array.pop()
+	if closeTagName != '' and element['tagName'][1:] == closeTagName:
+		print('MotherDuck')
+
+
+
 def prepareJSXDictionary(dictionary):
 	result = {}
 	for key in dictionary:
@@ -63,16 +72,22 @@ def prepareJSXDictionary(dictionary):
 		currentItem = result[key]
 		temp = []
 		for i in range(len(currentItem)):
+			props = dict(buildDictFromArray(currentItem[i], {}))
+			for j in range(1, len(currentItem[i])):
+				if currentItem[i][0] != '/':
+					props[currentItem[i][j]] = True
+					currentItem[i][j] = ''
 			temp.append({
-				'tagName': currentItem[i][0],
-				'props': dict(buildDictFromArray(currentItem[i], {})),
+				'tagName': currentItem[i][0] if currentItem[i][0] != '/' else ''.join(currentItem[i]),
+				'props': props,
 				'children': []
 			})
 		result[key] = temp
 	for key in result:
 		currentItem = result[key]
 		nesting = []
-		for i in range(len())
+		makeNested(currentItem, nesting)
+
 
 	return result;
 
@@ -158,7 +173,6 @@ def findJSX(content):
 				tag.append('=')
 				tempStr = ''
 				continue
-
 			if s in t['endTag']:
 				if s == '>':
 					tag.append(tempStr)
