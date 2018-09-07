@@ -9,7 +9,7 @@ import os
 import json
 
 __author__ = "Igor Terletskiy"
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 __license__ = "MIT"
 
 def addSymbols(start, end):
