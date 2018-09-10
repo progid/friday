@@ -7,6 +7,8 @@ import re
 import sys
 import os
 import json
+import copy
+import zlib
 
 __author__ = "Igor Terletskiy"
 __version__ = "0.2.1"
@@ -37,6 +39,12 @@ symbols = {
 
 # def dependencyAnalyzer:
 
+def clearDictionaryForClosedAttr(dictionaty):
+	
+
+def removeClosedAttr():
+
+
 def clearArray(array):
 	if '' in array:
 		array.remove('')
@@ -54,14 +62,19 @@ def buildDictFromArray(array, generatedDict={}):
 	clearArray(array)
 	return generatedDict
 
-def makeNested(mapArray, structureArray, closeTagName, complete):
-	if not len(array):
-		return where
-	element = array.pop()
-	if closeTagName != '' and element['tagName'][1:] == closeTagName:
-		print('MotherDuck')
-
-
+def makeNested(mapArray, completeArray, closeTagName):
+	if not len(mapArray):
+		return completeArray
+	element = mapArray.pop(0)
+	if element['closed']:
+		completeArray.append(element)
+	else:
+		if element['tagName'][0:1] == '/' and element['tagName'][1:] == closeTagName:
+			return completeArray;
+		else:
+			completeArray.append(element)
+			makeNested(mapArray, element['children'], element['tagName'])
+	return makeNested(mapArray, completeArray, closeTagName)
 
 def prepareJSXDictionary(dictionary):
 	result = {}
@@ -73,22 +86,25 @@ def prepareJSXDictionary(dictionary):
 		temp = []
 		for i in range(len(currentItem)):
 			props = dict(buildDictFromArray(currentItem[i], {}))
+			closed = False
 			for j in range(1, len(currentItem[i])):
 				if currentItem[i][0] != '/':
-					props[currentItem[i][j]] = True
+					if currentItem[i][j] == '/':
+						closed = True
+					else:
+						props[currentItem[i][j]] = True
 					currentItem[i][j] = ''
-			temp.append({
+			item = {
 				'tagName': currentItem[i][0] if currentItem[i][0] != '/' else ''.join(currentItem[i]),
 				'props': props,
-				'children': []
-			})
+				'closed': closed
+			}
+			if not closed:
+				item['children'] = []
+			temp.append(item)
 		result[key] = temp
 	for key in result:
-		currentItem = result[key]
-		nesting = []
-		makeNested(currentItem, nesting)
-
-
+		result[key] = makeNested(copy.deepcopy(result[key]), [],  '')
 	return result;
 
 def getJSXFrom(filepath):
@@ -215,6 +231,19 @@ def logJsonToFile(JsonData, filepath = 'out.txt'):
 	file.truncate();
 	file.close()
 
+def saveToFile(JsonData, filepath = 'saved.testablerc'):
+	file = open(filepath, 'wb')
+	file.seek(0)
+	file.write(zlib.compress(json.dumps(JsonData).encode("utf-8")))
+	file.truncate();
+	file.close()
+
+def loadFromFile(filepath = 'saved.testablerc'):
+	file = open(filepath, 'rb')
+	content = file.read()
+	uncompress = zlib.decompress(content)
+	return json.loads(uncompress)
+
 def main():
 	directories = sys.argv[1:] if len(sys.argv) > 1 else ['.']
 	extentions = ['js']
@@ -222,6 +251,8 @@ def main():
 	rawJSXDictionary = createJSXDictionary(filesList)
 	completeJSXDictionary = prepareJSXDictionary(rawJSXDictionary)
 	logJsonToFile(completeJSXDictionary)
+	#saveToFile(completeJSXDictionary)
+	loadFromFile()
 
 
 if __name__ == "__main__":
