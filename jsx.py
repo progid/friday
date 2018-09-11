@@ -39,11 +39,25 @@ symbols = {
 
 # def dependencyAnalyzer:
 
-def clearDictionaryForClosedAttr(dictionaty):
-	
+def clearDictionaryForUnusedAttr(dictionary):
+	result = {}
+	for key in dictionary:
+		items = copy.deepcopy(dictionary[key])
+		result[key] = removeUnusedAttr(items)
+	return result
 
-def removeClosedAttr():
-
+def removeUnusedAttr(itemArr):
+	for i in range(len(itemArr)):
+		element = itemArr[i]
+		if 'closed' in element:
+			del element['closed']
+		if 'props' in element and not len(element['props']):
+			del element['props']
+		if 'children' in element and not len(element['children']):
+			del element['children']
+		elif 'children' in element and len(element['children']):
+			removeUnusedAttr(element['children'])
+	return itemArr
 
 def clearArray(array):
 	if '' in array:
@@ -250,9 +264,10 @@ def main():
 	filesList = getListOfFiles(directories, extentions)
 	rawJSXDictionary = createJSXDictionary(filesList)
 	completeJSXDictionary = prepareJSXDictionary(rawJSXDictionary)
-	logJsonToFile(completeJSXDictionary)
-	#saveToFile(completeJSXDictionary)
-	loadFromFile()
+	minimisedJSXDictionary = clearDictionaryForUnusedAttr(completeJSXDictionary)
+	logJsonToFile(minimisedJSXDictionary)
+	# saveToFile(minimisedJSXDictionary)
+	# loadFromFile()
 
 
 if __name__ == "__main__":
