@@ -11,6 +11,7 @@ import copy
 import zlib
 import string
 import random
+import math
 
 __author__ = "Igor Terletskiy"
 __version__ = "0.2.1"
@@ -41,28 +42,34 @@ symbols = {
 
 __ids = set()
 __nodesCount = 0
+__idAlphabet = string.ascii_uppercase + string.ascii_lowercase + string.digits
 
-def randomStringGenerator(size = 10, chars = string.ascii_uppercase + string.ascii_lowercase + string.digits):
+def randomStringGenerator(size = 10, chars = __idAlphabet):
     return ''.join(random.choice(chars) for _ in range(size))
 
 def generateAutomationTestLabel():
-	str = randomStringGenerator(30)
-	if str in __ids:
-		generateAutomationTestLabel()
-	else:
-		__ids.append(str)
+	length = math.ceil(math.log(__nodesCount, len(__idAlphabet)))
+	length = length if length else 3
+	str = randomStringGenerator(length)
+	while str in __ids:
+		str = randomStringGenerator(length)
+	if str not in __ids:
+		__ids.add(str)
+	return 
 
 def dependencyAnalyzer(oldJSXDictionary, JSXDictionary):
 	# print(oldJSXDictionary, JSXDictionary)
-	print('')
+	for i in range(__nodesCount):
+		generateAutomationTestLabel()
+	print(__ids)
 
 def clearDictionaryForUnusedAttr(dictionary):
 	result = {}
+	global __nodesCount
+	__nodesCount = 0
 	for key in dictionary:
 		items = copy.deepcopy(dictionary[key])
 		result[key] = removeUnusedAttr(items)
-	global __nodesCount
-	print(__nodesCount)
 	return result
 
 def removeUnusedAttr(itemArr):
