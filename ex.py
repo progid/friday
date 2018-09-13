@@ -1,6 +1,34 @@
+import string
+import random
 import json
-import copy
+import sys
 
-arr1 = [{'tagName': 'SidebarMenu', 'props': {'component': '{Link}', 'componentProp': '"to"', 'route': '{location.pathname}'}, 'children': [{'tagName': 'SidebarMenuItem', 'props': {'icon': '{MenuAnalyticsIcon}', 'activeIcon': '{MenuAnalyticsActiveIcon}', 'label': "{t('menu.analytics')}", 'route': '{`${activePublicKey}analytics`}'}, 'children': [], 'closed': True}, {'tagName': 'SidebarMenuItem', 'props': {'icon': '{MenuCalendarIcon}', 'activeIcon': '{MenuCalendarActiveIcon}', 'label': "{t('menu.calendar')}", 'route': '{`${activePublicKey}calendar`}'}, 'children': [], 'closed': True}, {'tagName': 'SidebarMenuItem', 'props': {'icon': '{MenuPaymentsIcon}', 'activeIcon': '{MenuPaymentsActiveIcon}', 'label': "{t('menu.payments')}", 'route': '{`${activePublicKey}history/payments`}'}, 'children': [{'tagName': 'SidebarSubMenuItem', 'props': {'label': "{t('menu.history')}", 'route': '{`${activePublicKey}history/payments`}'}, 'children': [], 'closed': True}, {'tagName': 'SidebarSubMenuItem', 'props': {'label': "{t('menu.subscriptions')}", 'route': '{`${activePublicKey}history/subscriptions`}'}, 'children': [], 'closed': True}, {'tagName': 'SidebarSubMenuItem', 'props': {'label': "{t('menu.invoices')}", 'route': '{`${activePublicKey}history/invoices`}'}, 'children': [], 'closed': True}, {'tagName': 'SidebarSubMenuItem', 'props': {'label': "{t('menu.disputes')}", 'route': '{`${activePublicKey}history/disputes`}'}, 'children': [], 'closed': True}, {'tagName': 'SidebarSubMenuItem', 'props': {'label': '"MOTO"', 'route': '{`${activePublicKey}history/moto`}'}, 'children': [], 'closed': True}], 'closed': False}, {'tagName': 'SidebarMenuItem', 'props': {'icon': '{MenuQrIcon}', 'activeIcon': '{MenuQrIcon}', 'label': "{t('menu.qrCode')}", 'route': '{`${activePublicKey}history/qr`}'}, 'children': [], 'closed': True}, {'tagName': 'SidebarMenuItem', 'props': {'icon': '{MenuUsersIcon}', 'activeIcon': '{MenuUsersIconActiveIcon}', 'label': "{t('menu.clients')}", 'route': '{`${activePublicKey}clients`}'}, 'children': [], 'closed': True}, {'tagName': 'SidebarMenuItem', 'props': {'icon': '{MenuDiscountsIcon}', 'activeIcon': '{MenuDiscountActiveIcon}', 'label': "{t('menu.discounts')}", 'route': '{`${activePublicKey}discounts`}'}, 'children': [], 'closed': True}, {'tagName': 'SidebarMenuItem', 'props': {'icon': '{MenuSettingsIcon}', 'activeIcon': '{MenuSettingsActiveIcon}', 'label': "{t('menu.settings')}", 'route': '{`${activePublicKey}settings/general`}'}, 'children': [{'tagName': 'SidebarSubMenuItem', 'props': {'label': "{t('menu.general')}", 'route': '{`${activePublicKey}settings/general`}'}, 'children': [], 'closed': True}, {'tagName': 'SidebarSubMenuItem', 'props': {'label': "{t('menu.access')}", 'route': '{`${activePublicKey}settings/access`}'}, 'children': [], 'closed': True}, {'tagName': 'SidebarSubMenuItem', 'props': {'label': "{t('menu.refund')}", 'route': '{`${activePublicKey}settings/refund`}'}, 'children': [], 'closed': True}, {'tagName': 'SidebarSubMenuItem', 'props': {'label': "{t('menu.page')}", 'route': '{`${activePublicKey}settings/page`}'}, 'children': [], 'closed': True}, {'tagName': 'SidebarSubMenuItem', 'props': {'label': '"API"', 'route': '{`${activePublicKey}settings/api`}'}, 'children': [], 'closed': True}], 'closed': False}, {'tagName': 'SidebarMenuItem', 'props': {'icon': '{MenuDiscountsIcon}', 'activeIcon': '{MenuDiscountActiveIcon}', 'label': '"Chugaister"', 'route': '{`${activePublicKey}chugaister`}'}, 'children': [], 'closed': True}], 'closed': False}]
+__ids = set()
 
-print(json.dumps(arr1))
+def randomStringGenerator(size = 10, chars = string.ascii_uppercase + string.ascii_lowercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+def generateAutomationTestLabel():
+	str = randomStringGenerator(3)
+	x = 0
+	while str in __ids:
+		print(len(__ids))
+		str = randomStringGenerator(13)
+	print('\n')
+	if str not in __ids:
+		__ids.add(str)
+	print('__id len: ', len(__ids))
+
+
+def main():
+	for i in range(0, 238328):
+		generateAutomationTestLabel()
+	file = open('xxx.txt', 'w+')
+	file.seek(0)
+	file.write(json.dumps(list(__ids)))
+	file.truncate()
+	file.close()
+
+if __name__ == "__main__":
+	""" This is executed when run from the command line """
+	main()

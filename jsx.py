@@ -9,6 +9,8 @@ import os
 import json
 import copy
 import zlib
+import string
+import random
 
 __author__ = "Igor Terletskiy"
 __version__ = "0.2.1"
@@ -37,17 +39,36 @@ symbols = {
 	 | {'-', '_', '/', '{', 'ё', 'Ё', 'є', 'Є', 'і', 'І', 'ї', 'Ї', 'ґ', 'Ґ'}
 }
 
-# def dependencyAnalyzer:
+__ids = set()
+__nodesCount = 0
+
+def randomStringGenerator(size = 10, chars = string.ascii_uppercase + string.ascii_lowercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+def generateAutomationTestLabel():
+	str = randomStringGenerator(30)
+	if str in __ids:
+		generateAutomationTestLabel()
+	else:
+		__ids.append(str)
+
+def dependencyAnalyzer(oldJSXDictionary, JSXDictionary):
+	# print(oldJSXDictionary, JSXDictionary)
+	print('')
 
 def clearDictionaryForUnusedAttr(dictionary):
 	result = {}
 	for key in dictionary:
 		items = copy.deepcopy(dictionary[key])
 		result[key] = removeUnusedAttr(items)
+	global __nodesCount
+	print(__nodesCount)
 	return result
 
 def removeUnusedAttr(itemArr):
+	global __nodesCount
 	for i in range(len(itemArr)):
+		__nodesCount = __nodesCount + 1
 		element = itemArr[i]
 		if 'closed' in element:
 			del element['closed']
@@ -195,6 +216,12 @@ def findJSX(content):
 					tempStr = ''
 				continue
 			if s in t['alphabet']:
+				if s == '{':
+					isItExpression = True
+					isItPropsValue = True
+					propsStartSymbol = s
+					propsEndSymbol = '}'
+					propsDeep += 1
 				tempStr += s
 				continue
 			elif s in t['assign']:
@@ -265,7 +292,8 @@ def main():
 	rawJSXDictionary = createJSXDictionary(filesList)
 	completeJSXDictionary = prepareJSXDictionary(rawJSXDictionary)
 	minimisedJSXDictionary = clearDictionaryForUnusedAttr(completeJSXDictionary)
-	logJsonToFile(minimisedJSXDictionary)
+	dependencyAnalyzer(loadFromFile(), minimisedJSXDictionary)
+	# logJsonToFile()
 	# saveToFile(minimisedJSXDictionary)
 	# loadFromFile()
 
