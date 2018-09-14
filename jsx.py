@@ -23,7 +23,7 @@ def addSymbols(start, end):
 		temp.add(chr(i))
 	return temp
 
-symbols = {
+__symbols = {
 	'startTag': {'<'},
 	'common': {'\\'},
 	'endTag': {'/', '>'},
@@ -39,7 +39,6 @@ symbols = {
 	 | addSymbols('А', 'Я')
 	 | {'-', '_', '/', '{', 'ё', 'Ё', 'є', 'Є', 'і', 'І', 'ї', 'Ї', 'ґ', 'Ґ'}
 }
-
 __ids = set()
 __nodesCount = 0
 __idAlphabet = string.ascii_uppercase + string.ascii_lowercase + string.digits
@@ -92,6 +91,9 @@ def clearArray(array):
 		array.remove('')
 		return clearArray(array)
 	return array
+
+def addTestableLabelForElements():
+	
 
 def buildDictFromArray(array, generatedDict={}):
 	if '=' in array:
@@ -156,6 +158,7 @@ def getJSXFrom(filepath):
 	return result
 
 def findJSX(content):
+	global __symbols
 	tempStr = ''
 	writable = False
 	closingTagRequest = False
@@ -171,7 +174,7 @@ def findJSX(content):
 	for i in range(len(content)):
 
 		s = content[i]
-		t = symbols
+		t = __symbols
 
 		if writable:
 			if stringScreening:
