@@ -23,6 +23,9 @@ def addSymbols(start, end):
 		temp.add(chr(i))
 	return temp
 
+__ids = set()
+__nodesCount = 0
+__idAlphabet = string.ascii_letters + string.digits
 __symbols = {
 	'startTag': {'<'},
 	'common': {'\\'},
@@ -32,16 +35,10 @@ __symbols = {
 	'startExpressionLiteral': {'{'},
 	'endExpressionLiteral': {'}'},
 	'assign': {'='},
-	'alphabet': addSymbols('0', '9')
-	 | addSymbols('a', 'z')
-	 | addSymbols('A', 'Z')
-	 | addSymbols('а', 'я')
+	'alphabet': addSymbols('а', 'я')
 	 | addSymbols('А', 'Я')
-	 | {'-', '_', '/', '{', 'ё', 'Ё', 'є', 'Є', 'і', 'І', 'ї', 'Ї', 'ґ', 'Ґ'}
+	 | set('-_/{ёЁєЄіІїЇґҐ' + __idAlphabet)
 }
-__ids = set()
-__nodesCount = 0
-__idAlphabet = string.ascii_uppercase + string.ascii_lowercase + string.digits
 
 def randomStringGenerator(size = 10, chars = __idAlphabet):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -54,7 +51,7 @@ def generateAutomationTestLabel():
 		str = randomStringGenerator(length)
 	if str not in __ids:
 		__ids.add(str)
-	return 
+	return str
 
 def dependencyAnalyzer(oldJSXDictionary, JSXDictionary):
 	# print(oldJSXDictionary, JSXDictionary)
@@ -92,8 +89,18 @@ def clearArray(array):
 		return clearArray(array)
 	return array
 
-def addTestableLabelForElements():
-	
+def addTestableLabelFor(element):
+	if 'props' not in element:
+		element['props'] = dict()
+	if 'id' not in element['props'] or element['props']['id'] == '':
+		element['props']['testable'] = '\'' + generateAutomationTestLabel() + '\''
+		if 'key' in element['props']:
+			if element['props']['key'][0:1] in __symbols['startExpressionLiteral']:
+				element['props']['testable'] = '{' + element['props']['testable'] + element['props']['key'][1:-1] + '}' 
+			elif  element['props']['key'][0:1] in __symbols['stringLiterals']:
+				element['props']['testable'] = element['props']['testable'] + element['props']['key']
+	return element
+
 
 def buildDictFromArray(array, generatedDict={}):
 	if '=' in array:
