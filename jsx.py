@@ -14,7 +14,7 @@ import random
 import math
 
 __author__ = "Igor Terletskiy"
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 __license__ = "MIT"
 
 def addSymbols(start, end):
@@ -68,6 +68,18 @@ def clearDictionaryForUnusedAttr(dictionary):
 		result[key] = removeUnusedAttr(items)
 	return result
 
+def addTestableLabelFor(element):
+	if 'props' not in element:
+		element['props'] = dict()
+	if 'id' not in element['props'] or element['props']['id'] == '':
+		element['props']['testable'] = '\'' + generateAutomationTestLabel() + '\''
+		if 'key' in element['props']:
+			if element['props']['key'][0:1] in __symbols['startExpressionLiteral']:
+				element['props']['testable'] = '{' + element['props']['testable'] + ' + (' +  element['props']['key'][1:-1] + ')}' 
+			elif  element['props']['key'][0:1] in __symbols['stringLiterals']:
+				element['props']['testable'] = '{' + element['props']['testable'] + ' + ' +  element['props']['key'] + '}' 
+	return element
+
 def removeUnusedAttr(itemArr):
 	global __nodesCount
 	for i in range(len(itemArr)):
@@ -89,18 +101,19 @@ def clearArray(array):
 		return clearArray(array)
 	return array
 
-def addTestableLabelFor(element):
-	if 'props' not in element:
-		element['props'] = dict()
-	if 'id' not in element['props'] or element['props']['id'] == '':
-		element['props']['testable'] = '\'' + generateAutomationTestLabel() + '\''
-		if 'key' in element['props']:
-			if element['props']['key'][0:1] in __symbols['startExpressionLiteral']:
-				element['props']['testable'] = '{' + element['props']['testable'] + element['props']['key'][1:-1] + '}' 
-			elif  element['props']['key'][0:1] in __symbols['stringLiterals']:
-				element['props']['testable'] = element['props']['testable'] + element['props']['key']
-	return element
+def recursivelyAddTestableForJSXDict(items):
+	for i in range(len(items)):
+		item = items[i]
+		addTestableLabelFor(item)
+		if 'children' in item:
+			recursivelyAddTestableForJSXDict(item['children'])
+	return items
 
+def firstSetOfTestableLabels(JSXDict):
+	result = dict()
+	for key in JSXDict:
+		result[key] = recursivelyAddTestableForJSXDict(copy.deepcopy(JSXDict[key]))
+	return result
 
 def buildDictFromArray(array, generatedDict={}):
 	if '=' in array:
@@ -309,8 +322,9 @@ def main():
 	rawJSXDictionary = createJSXDictionary(filesList)
 	completeJSXDictionary = prepareJSXDictionary(rawJSXDictionary)
 	minimisedJSXDictionary = clearDictionaryForUnusedAttr(completeJSXDictionary)
-	dependencyAnalyzer(loadFromFile(), minimisedJSXDictionary)
-	# logJsonToFile()
+	withTestableLabels = firstSetOfTestableLabels(minimisedJSXDictionary)
+	#dependencyAnalyzer(loadFromFile(), minimisedJSXDictionary)
+	logJsonToFile(withTestableLabels)
 	# saveToFile(minimisedJSXDictionary)
 	# loadFromFile()
 
