@@ -3,15 +3,7 @@
 Module Docstring
 """
 
-import re
-import sys
-import os
-import json
-import copy
-import zlib
-import string
-import random
-import math
+import re, sys, os, json, copy, zlib, string, random, math
 
 __author__ = "Igor Terletskiy"
 __version__ = "0.2.2"
@@ -53,6 +45,37 @@ def generateAutomationTestLabel():
 		__ids.add(str)
 	return str
 
+def makeListFromDict(JSXDict):
+	result = dict()
+	for key in JSXDict:
+		result[key] = recfuncMakeListFromDict(copy.deepcopy(JSXDict[key]))
+	return result
+
+def recfuncMakeListFromDict(elements):
+	result = []
+	for i in range(len(elements)):
+		item = elements[i]
+		result.append([item['tagName'], item['props']['testable']])
+		if 'children' in item:
+			result = result + recfuncMakeListFromDict(item['children'])
+	return result
+
+def addTestableToDOM(JSXModel):
+	for key in JSXModel:
+		file = open(key, 'r+')
+		content = file.read()
+		items = JSXModel[key]
+		for i in range(len(items)):
+			item = items[i]
+			pattern = r'<' + item[0] + r'(?!\sdata-testable)'
+			print(pattern ,'\n\n')
+			content = content.replace(r''+pattern, '<' + item[0] + ' data-testable=' + item[1], 1)
+		logJsonToFile(content)
+		file.seek(0)
+		file.write(content)
+		file.truncate();
+		file.close()
+
 def dependencyAnalyzer(oldJSXDictionary, JSXDictionary):
 	# print(oldJSXDictionary, JSXDictionary)
 	for i in range(__nodesCount):
@@ -77,7 +100,9 @@ def addTestableLabelFor(element):
 			if element['props']['key'][0:1] in __symbols['startExpressionLiteral']:
 				element['props']['testable'] = '{' + element['props']['testable'] + ' + (' +  element['props']['key'][1:-1] + ')}' 
 			elif  element['props']['key'][0:1] in __symbols['stringLiterals']:
-				element['props']['testable'] = '{' + element['props']['testable'] + ' + ' +  element['props']['key'] + '}' 
+				element['props']['testable'] = '{' + element['props']['testable'] + ' + ' +  element['props']['key'] + '}'
+	else:
+		element['props']['testable'] = element['props']['id']
 	return element
 
 def removeUnusedAttr(itemArr):
@@ -323,8 +348,10 @@ def main():
 	completeJSXDictionary = prepareJSXDictionary(rawJSXDictionary)
 	minimisedJSXDictionary = clearDictionaryForUnusedAttr(completeJSXDictionary)
 	withTestableLabels = firstSetOfTestableLabels(minimisedJSXDictionary)
+	listJSX = makeListFromDict(withTestableLabels)
+	addTestableToDOM(listJSX)
 	#dependencyAnalyzer(loadFromFile(), minimisedJSXDictionary)
-	logJsonToFile(withTestableLabels)
+	#logJsonToFile(listJSX)
 	# saveToFile(minimisedJSXDictionary)
 	# loadFromFile()
 
