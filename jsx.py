@@ -55,9 +55,11 @@ def recfuncMakeListFromDict(elements):
 	result = []
 	for i in range(len(elements)):
 		item = elements[i]
-		result.append([item['tagName'], item['props']['testable']])
+		result.append([item['tagName'], item['props']['testable'], 'children' not in item])
 		if 'children' in item:
 			result = result + recfuncMakeListFromDict(item['children'])
+			result.append(['/' + item['tagName']])
+
 	return result
 
 def addTestableToDOM(JSXModel):
@@ -67,10 +69,9 @@ def addTestableToDOM(JSXModel):
 		items = JSXModel[key]
 		for i in range(len(items)):
 			item = items[i]
-			pattern = r'<' + item[0] + r'(?!\sdata-testable)'
-			print(pattern ,'\n\n')
-			content = content.replace(r''+pattern, '<' + item[0] + ' data-testable=' + item[1], 1)
-		logJsonToFile(content)
+			
+			pattern = r'<' + item[0] + r'\s(?!data-testable)'
+			content = re.sub(pattern, '<' + item[0] + ' data-testable=' + item[1] + ' ', content, 1)
 		file.seek(0)
 		file.write(content)
 		file.truncate();
@@ -349,9 +350,9 @@ def main():
 	minimisedJSXDictionary = clearDictionaryForUnusedAttr(completeJSXDictionary)
 	withTestableLabels = firstSetOfTestableLabels(minimisedJSXDictionary)
 	listJSX = makeListFromDict(withTestableLabels)
-	addTestableToDOM(listJSX)
+	#addTestableToDOM(listJSX)
 	#dependencyAnalyzer(loadFromFile(), minimisedJSXDictionary)
-	#logJsonToFile(listJSX)
+	logJsonToFile(listJSX)
 	# saveToFile(minimisedJSXDictionary)
 	# loadFromFile()
 
