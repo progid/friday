@@ -69,9 +69,10 @@ def addTestableToDOM(JSXModel):
 		items = JSXModel[key]
 		for i in range(len(items)):
 			item = items[i]
-			
-			pattern = r'<' + item[0] + r'\s(?!data-testable)'
-			content = re.sub(pattern, '<' + item[0] + ' data-testable=' + item[1] + ' ', content, 1)
+			print(item)
+			if(item[0][0] != '/'):
+				pattern = r'<' + item[0] + r'\s(?!data-testable)'
+				content = re.sub(pattern, '<' + item[0] + ' data-testable=' + item[1] + ' ', content, 1)
 		file.seek(0)
 		file.write(content)
 		file.truncate();
@@ -350,7 +351,7 @@ def main():
 	minimisedJSXDictionary = clearDictionaryForUnusedAttr(completeJSXDictionary)
 	withTestableLabels = firstSetOfTestableLabels(minimisedJSXDictionary)
 	listJSX = makeListFromDict(withTestableLabels)
-	#addTestableToDOM(listJSX)
+	addTestableToDOM(listJSX)
 	#dependencyAnalyzer(loadFromFile(), minimisedJSXDictionary)
 	logJsonToFile(listJSX)
 	# saveToFile(minimisedJSXDictionary)
