@@ -3,7 +3,7 @@
 Module Docstring
 """
 
-import re, sys, os, json, copy, zlib, string, random, math
+import re, sys, os, json, copy, zlib, string, random, math, hashlib
 
 __author__ = "Igor Terletskiy"
 __version__ = "0.2.2"
@@ -29,7 +29,10 @@ __symbols = {
 	'assign': {'='},
 	'alphabet': addSymbols('а', 'я')
 	 | addSymbols('А', 'Я')
-	 | set('-_/{ёЁєЄіІїЇґҐ' + __idAlphabet)
+	 | set('-_/{ёЁєЄіІїЇґҐ' + __idAlphabet) # if you need enable support of point consists tags, you should add point to the set
+}
+__whitelist = {
+	'br', 'b', 'i', 's', 'm'
 }
 
 def randomStringGenerator(size = 10, chars = __idAlphabet):
@@ -51,13 +54,13 @@ def makeListFromDict(JSXDict):
 		result[key] = recfuncMakeListFromDict(copy.deepcopy(JSXDict[key]))
 	return result
 
-def recfuncMakeListFromDict(elements):
+def recfuncMakeListFromDict(elements, testables=True):
 	result = []
 	for i in range(len(elements)):
 		item = elements[i]
-		result.append([item['tagName'], item['props']['testable'], 'children' not in item])
+		result.append([item['tagName'], item['props']['testable'] if testables else hashlib.md5(json.dumps([item['tagName'], item['props'] if 'props' in item else {}], ensure_ascii=False).encode('utf8')).hexdigest(), 'children' not in item])
 		if 'children' in item:
-			result = result + recfuncMakeListFromDict(item['children'])
+			result = result + recfuncMakeListFromDict(item['children'], testables)
 			result.append(['/' + item['tagName']])
 
 	return result
@@ -79,7 +82,7 @@ def addTestableToDOM(JSXModel):
 		file.close()
 
 def dependencyAnalyzer(oldJSXDictionary, JSXDictionary):
-	# print(oldJSXDictionary, JSXDictionary)
+	print(oldJSXDictionary, JSXDictionary)
 	for i in range(__nodesCount):
 		generateAutomationTestLabel()
 	print(__ids)
@@ -152,6 +155,36 @@ def buildDictFromArray(array, generatedDict={}):
 		return buildDictFromArray(array, generatedDict)
 	clearArray(array)
 	return generatedDict
+
+def dictToHash(dictionary):
+	dict = copy.deepcopy(dictionary)
+	for key in dict:
+		dict[key] = hashlib.md5(json.dumps(dict[key], ensure_ascii=False).encode('utf8')).hexdigest()
+	return dict
+
+def getChangedFiles(newDict, oldDict):
+	newHashesDict = dictToHash(newDict)
+	oldHashesDict = dictToHash(oldDict)
+	result = copy.deepcopy(newDict)
+	for key in newHashesDict:
+		if key in oldHashesDict and oldHashesDict[key] == newHashesDict[key]:
+			del result[key]
+	return result
+
+def getChangedBlocksOfFiles(newFiles, oldDict):
+	for key in newFiles:
+		print('***')
+		getChangedBlocksOfFile(newFiles[key], oldDict[key])
+
+def makeListFromDictWithoutTestable(JSXDict):
+	result = dict()
+	for key in JSXDict:
+		result[key] = recfuncMakeListFromDict(copy.deepcopy(JSXDict[key]), False)
+	return result
+
+def getChangedBlocksOfFile(newFileJson, oldFileJson):
+	for item in newFileJson:
+		print(item)
 
 def makeNested(mapArray, completeArray, closeTagName):
 	if not len(mapArray):
@@ -351,12 +384,14 @@ def main():
 	minimisedJSXDictionary = clearDictionaryForUnusedAttr(completeJSXDictionary)
 	withTestableLabels = firstSetOfTestableLabels(minimisedJSXDictionary)
 	listJSX = makeListFromDict(withTestableLabels)
-	addTestableToDOM(listJSX)
+	oldJSXDictionary = loadFromFile()
+	changedFiles = getChangedFiles(minimisedJSXDictionary, oldJSXDictionary)
+	#oldVersionChangedFiles
+	getChangedBlocksOfFiles(changedFiles, oldJSXDictionary)
+	logJsonToFile(makeListFromDictWithoutTestable(oldJSXDictionary))
 	#dependencyAnalyzer(loadFromFile(), minimisedJSXDictionary)
-	logJsonToFile(listJSX)
+	#addTestableToDOM(listJSX)
 	# saveToFile(minimisedJSXDictionary)
-	# loadFromFile()
-
 
 if __name__ == "__main__":
 	""" This is executed when run from the command line """
