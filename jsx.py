@@ -48,21 +48,34 @@ def generateAutomationTestLabel():
 		__ids.add(str)
 	return str
 
-def makeListFromDict(JSXDict):
+def makeListFromDict(JSXDict, callback):
 	result = dict()
 	for key in JSXDict:
-		result[key] = recfuncMakeListFromDict(copy.deepcopy(JSXDict[key]))
+		result[key] = callback(copy.deepcopy(JSXDict[key]))
 	return result
 
-def recfuncMakeListFromDict(elements, testables=True):
+def recfuncMakeListFromDict(elements):
 	result = []
 	for i in range(len(elements)):
 		item = elements[i]
-		result.append([item['tagName'], item['props']['testable'] if testables else hashlib.md5(json.dumps([item['tagName'], item['props'] if 'props' in item else {}], ensure_ascii=False).encode('utf8')).hexdigest(), 'children' not in item])
+		result.append([item['tagName'], item['props']['testable'], 'children' not in item])
 		if 'children' in item:
-			result = result + recfuncMakeListFromDict(item['children'], testables)
+			result = result + recfuncMakeListFromDict(item['children'])
 			result.append(['/' + item['tagName']])
+	return result
 
+def recfuncMakeListFromDictWithoutLabels(elements):
+	result = []
+	for i in range(len(elements)):
+		item = elements[i]
+		result.append([
+			item['tagName'],
+			hashlib.md5(json.dumps([item['tagName'], item['props'] if 'props' in item else {}], ensure_ascii=False).encode('utf8')).hexdigest(),
+			False if 'children' not in item else hashlib.md5(json.dumps(item, ensure_ascii=False).encode('utf8')).hexdigest()
+		])
+		if 'children' in item:
+			result = result + recfuncMakeListFromDictWithoutLabels(item['children'])
+			result.append(['/' + item['tagName']])
 	return result
 
 def addTestableToDOM(JSXModel):
@@ -162,29 +175,56 @@ def dictToHash(dictionary):
 		dict[key] = hashlib.md5(json.dumps(dict[key], ensure_ascii=False).encode('utf8')).hexdigest()
 	return dict
 
-def getChangedFiles(newDict, oldDict):
+def getChangedListOfFiles(newDict, oldDict):
 	newHashesDict = dictToHash(newDict)
 	oldHashesDict = dictToHash(oldDict)
 	result = copy.deepcopy(newDict)
 	for key in newHashesDict:
 		if key in oldHashesDict and oldHashesDict[key] == newHashesDict[key]:
 			del result[key]
+	return list(result.keys())
+
+def getChangedFiles(newDict, oldDict):
+	filesList = getChangedListOfFiles(newDict, oldDict)
+	result = {'current': {}, 'previous': {}}
+	for key in filesList:
+		result['current'][key] = copy.deepcopy(newDict[key])
+		result['previous'][key] = copy.deepcopy(oldDict[key])
+	result['current'] = makeListFromDict(result['current'], recfuncMakeListFromDictWithoutLabels)
+	result['previous'] = makeListFromDict(result['previous'], recfuncMakeListFromDictWithoutLabels)
 	return result
 
-def getChangedBlocksOfFiles(newFiles, oldDict):
-	for key in newFiles:
-		print('***')
-		getChangedBlocksOfFile(newFiles[key], oldDict[key])
+def removeDuplicatesOfComparsionModel(model)
+	newModel = model['current']
+	oldModel = model['previous']
+	modelKeys = list(newModel.keys())
+	tag = False
+	for key in modelKeys:
+		for subkey in modelKeys:
+			if not tag:
+				if newModel[key][1] and newModel[key][1] == oldModel[subkey][1]:
+					if newModel[key][2] and newModel[key][2] == oldModel[subkey][2]:
+						tag = oldModel[subkey][0]
+						del oldModel
+			else:
 
-def makeListFromDictWithoutTestable(JSXDict):
-	result = dict()
-	for key in JSXDict:
-		result[key] = recfuncMakeListFromDict(copy.deepcopy(JSXDict[key]), False)
-	return result
+	for key in modelKeys:
+		for i in range(len(newModel[key])):
+			item = newModel[key][i]
+			for j in range(len(oldModel[key])):
+				subitem = oldModel[key][j]
+					if not tag:
+						
+					else:
+						oldModel[key][j] = []
+						if '/' + tag == subitem[0]:
+							break
 
-def getChangedBlocksOfFile(newFileJson, oldFileJson):
+
+def getChangedBlocksOfComparsionModel(model):
 	for item in newFileJson:
 		print(item)
+
 
 def makeNested(mapArray, completeArray, closeTagName):
 	if not len(mapArray):
@@ -383,12 +423,12 @@ def main():
 	completeJSXDictionary = prepareJSXDictionary(rawJSXDictionary)
 	minimisedJSXDictionary = clearDictionaryForUnusedAttr(completeJSXDictionary)
 	withTestableLabels = firstSetOfTestableLabels(minimisedJSXDictionary)
-	listJSX = makeListFromDict(withTestableLabels)
+	listJSX = makeListFromDict(withTestableLabels, recfuncMakeListFromDict)
 	oldJSXDictionary = loadFromFile()
-	changedFiles = getChangedFiles(minimisedJSXDictionary, oldJSXDictionary)
+	#changedFilesList = getListOfChangedFiles(minimisedJSXDictionary, oldJSXDictionary)
 	#oldVersionChangedFiles
-	getChangedBlocksOfFiles(changedFiles, oldJSXDictionary)
-	logJsonToFile(makeListFromDictWithoutTestable(oldJSXDictionary))
+	# getChangedBlocksOfFiles(changedFiles, oldJSXDictionary)
+	logJsonToFile(getChangedFiles(minimisedJSXDictionary, oldJSXDictionary))
 	#dependencyAnalyzer(loadFromFile(), minimisedJSXDictionary)
 	#addTestableToDOM(listJSX)
 	# saveToFile(minimisedJSXDictionary)
