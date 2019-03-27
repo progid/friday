@@ -6,7 +6,7 @@ for r in range(1,len(sys.argv)):
 	content = file.read()
 	splitters = ['-', ':']
 	for z in range(len(splitters)):
-		matchList = re.findall(r'\s\w+(?:' + splitters[z] + '\w+)+\=', content)
+		matchList = re.findall(r'\s\w+(?:' + splitters[z] + r'\w+)+\=', content)
 		preparedMatchList = [];
 		for i in range(len(matchList)):
 			temp = matchList[i].split(splitters[z])
