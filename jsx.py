@@ -6,7 +6,7 @@ Module Docstring
 import re, sys, os, json, copy, zlib, string, random, math, hashlib
 
 __author__ = "Igor Terletskiy"
-__version__ = "0.2.2"
+__version__ = "0.3.1"
 __license__ = "MIT"
 
 def addSymbols(start, end):
@@ -29,7 +29,7 @@ __symbols = {
 	'assign': {'='},
 	'alphabet': addSymbols('а', 'я')
 	 | addSymbols('А', 'Я')
-	 | set('-_/{ёЁєЄіІїЇґҐ' + __idAlphabet) # if you need enable support of point consists tags, you should add point to the set
+	 | set('-_/{ёЁєЄіІїЇґҐ' + __idAlphabet)
 }
 __whitelist = {
 	'br', 'b', 'i', 's', 'm'
@@ -38,10 +38,9 @@ __whitelist = {
 def randomStringGenerator(size = 10, chars = __idAlphabet):
     return ''.join(random.choice(chars) for _ in range(size))
 
-def generateAutomationTestLabel():
-	length = math.ceil(math.log(__nodesCount, len(__idAlphabet)))
-	length = length if length else 3
-	str = randomStringGenerator(length)
+def generateAutomationTestLabel(label = ''):
+	length = max(math.ceil(math.log(__nodesCount, len(__idAlphabet))), 3)
+	str = label if label else randomStringGenerator(length)
 	while str in __ids:
 		str = randomStringGenerator(length)
 	if str not in __ids:
@@ -70,8 +69,8 @@ def recfuncMakeListFromDictWithoutLabels(elements):
 		item = elements[i]
 		result.append([
 			item['tagName'],
-			hashlib.md5(json.dumps([item['tagName'], item['props'] if 'props' in item else {}], ensure_ascii=False).encode('utf8')).hexdigest(),
-			False if 'children' not in item else hashlib.md5(json.dumps(item, ensure_ascii=False).encode('utf8')).hexdigest()
+			item['tagName'] + '|' + hashlib.md5(json.dumps(item['props'], ensure_ascii=False).encode('utf8')).hexdigest() if 'props' in item else '',
+			False if 'children' not in item else hashlib.md5(json.dumps(item['children'], ensure_ascii=False).encode('utf8')).hexdigest()
 		])
 		if 'children' in item:
 			result = result + recfuncMakeListFromDictWithoutLabels(item['children'])
@@ -91,7 +90,7 @@ def addTestableToDOM(JSXModel):
 				content = re.sub(pattern, '<' + item[0] + ' data-testable=' + item[1] + ' ', content, 1)
 		file.seek(0)
 		file.write(content)
-		file.truncate();
+		file.truncate()
 		file.close()
 
 def dependencyAnalyzer(oldJSXDictionary, JSXDictionary):
@@ -189,42 +188,68 @@ def getChangedFiles(newDict, oldDict):
 	result = {'current': {}, 'previous': {}}
 	for key in filesList:
 		result['current'][key] = copy.deepcopy(newDict[key])
-		result['previous'][key] = copy.deepcopy(oldDict[key])
+		result['previous'][key] = copy.deepcopy(oldDict[key]) if key in oldDict else {}
 	result['current'] = makeListFromDict(result['current'], recfuncMakeListFromDictWithoutLabels)
 	result['previous'] = makeListFromDict(result['previous'], recfuncMakeListFromDictWithoutLabels)
 	return result
 
-def removeDuplicatesOfComparsionModel(model)
+def removeDuplicatesOfComparsionModel(model):
 	newModel = model['current']
 	oldModel = model['previous']
 	modelKeys = list(newModel.keys())
 	tag = False
-	for key in modelKeys:
-		for subkey in modelKeys:
-			if not tag:
-				if newModel[key][1] and newModel[key][1] == oldModel[subkey][1]:
-					if newModel[key][2] and newModel[key][2] == oldModel[subkey][2]:
-						tag = oldModel[subkey][0]
-						del oldModel
-			else:
 
+	for key in modelKeys:
+		for i in range(len(newModel[key])):
+			item = newModel[key][i]
+			if tag:
+				if '/' + tag == item[0]:
+					tag = False
+				newModel[key][i] = ''
+			else:
+				for j in range(len(oldModel[key])):
+					subitem = oldModel[key][j]
+					if not tag:
+						if len(item) >= 2 and len(subitem) >= 2 and item[1] == subitem[1]:
+							if len(item) >= 3 and len(subitem) >= 3 and item[2] == subitem[2] and item[2]:
+								tag = subitem[0]
+								oldModel[key][j] = ''
+								newModel[key][i] = ''
+							elif len(item) >= 3 and len(subitem) >= 3 and not item[2]:
+								oldModel[key][j] = ''
+								newModel[key][i] = ''
+								break
+					else:
+						oldModel[key][j] = ''
+						if '/' + tag == subitem[0]:
+							print(tag)
+							break
+		clearArray(newModel[key])
+		clearArray(oldModel[key])
+	return model
+
+def addLabelsForNewTags(model):
+	newModel = model['current']
+	oldModel = model['previous']
+	modelKeys = list(model['current'].keys())
+	exceptionKeys = []
+	for key in modelKeys:
+		if not len(oldModel[key]):
+			for i in range(len(newModel[key])):
+				newModel[key][i].append('new')
+			exceptionKeys.append(key)
+	modelKeys = list(set(modelKeys) - set(exceptionKeys))
 	for key in modelKeys:
 		for i in range(len(newModel[key])):
 			item = newModel[key][i]
 			for j in range(len(oldModel[key])):
 				subitem = oldModel[key][j]
-					if not tag:
-						
-					else:
-						oldModel[key][j] = []
-						if '/' + tag == subitem[0]:
-							break
+	return model
 
-
-def getChangedBlocksOfComparsionModel(model):
-	for item in newFileJson:
-		print(item)
-
+def handleChangedBlocksOfComparsionModel(model):
+	pureModel = removeDuplicatesOfComparsionModel(model)
+	withLabelsForNewTags = addLabelsForNewTags(pureModel)
+	return withLabelsForNewTags
 
 def makeNested(mapArray, completeArray, closeTagName):
 	if not len(mapArray):
@@ -234,7 +259,7 @@ def makeNested(mapArray, completeArray, closeTagName):
 		completeArray.append(element)
 	else:
 		if element['tagName'][0:1] == '/' and element['tagName'][1:] == closeTagName:
-			return completeArray;
+			return completeArray
 		else:
 			completeArray.append(element)
 			makeNested(mapArray, element['children'], element['tagName'])
@@ -269,7 +294,7 @@ def prepareJSXDictionary(dictionary):
 		result[key] = temp
 	for key in result:
 		result[key] = makeNested(copy.deepcopy(result[key]), [],  '')
-	return result;
+	return result
 
 def getJSXFrom(filepath):
 	file = open(filepath, 'r+')
@@ -399,14 +424,14 @@ def logJsonToFile(JsonData, filepath = 'out.txt'):
 	file = open(filepath, 'w+')
 	file.seek(0)
 	file.write(json.dumps(JsonData))
-	file.truncate();
+	file.truncate()
 	file.close()
 
 def saveToFile(JsonData, filepath = 'saved.testablerc'):
 	file = open(filepath, 'wb')
 	file.seek(0)
 	file.write(zlib.compress(json.dumps(JsonData).encode("utf-8")))
-	file.truncate();
+	file.truncate()
 	file.close()
 
 def loadFromFile(filepath = 'saved.testablerc'):
@@ -428,10 +453,14 @@ def main():
 	#changedFilesList = getListOfChangedFiles(minimisedJSXDictionary, oldJSXDictionary)
 	#oldVersionChangedFiles
 	# getChangedBlocksOfFiles(changedFiles, oldJSXDictionary)
-	logJsonToFile(getChangedFiles(minimisedJSXDictionary, oldJSXDictionary))
+	# logJsonToFile(getChangedFiles(minimisedJSXDictionary, oldJSXDictionary))
+	comparsionModel = getChangedFiles(minimisedJSXDictionary, oldJSXDictionary)
+	logJsonToFile(handleChangedBlocksOfComparsionModel(comparsionModel))
+	# logJsonToFile(comparsionModel)
 	#dependencyAnalyzer(loadFromFile(), minimisedJSXDictionary)
 	#addTestableToDOM(listJSX)
 	# saveToFile(minimisedJSXDictionary)
+	generateAutomationTestLabel()
 
 if __name__ == "__main__":
 	""" This is executed when run from the command line """
