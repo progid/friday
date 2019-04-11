@@ -2,11 +2,10 @@
 """
 Module Docstring
 """
-
 import re, sys, os, json, copy, zlib, string, random, math, hashlib
 
 __author__ = "Igor Terletskiy"
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 __license__ = "MIT"
 
 def addSymbols(start, end):
@@ -31,9 +30,7 @@ __symbols = {
 	 | addSymbols('А', 'Я')
 	 | set('-_/{ёЁєЄіІїЇґҐ' + __idAlphabet)
 }
-__whitelist = {
-	'br', 'b', 'i', 's', 'm'
-}
+__whitelist = { 'br', 'b', 'i', 's', 'm' }
 
 def randomStringGenerator(size = 10, chars = __idAlphabet):
     return ''.join(random.choice(chars) for _ in range(size))
@@ -69,7 +66,7 @@ def recfuncMakeListFromDictWithoutLabels(elements):
 		item = elements[i]
 		result.append([
 			item['tagName'],
-			item['tagName'] + '|' + hashlib.md5(json.dumps(item['props'], ensure_ascii=False).encode('utf8')).hexdigest() if 'props' in item else '',
+			hashlib.md5(json.dumps(item['props'], ensure_ascii=False).encode('utf8')).hexdigest() if 'props' in item else '',
 			False if 'children' not in item else hashlib.md5(json.dumps(item['children'], ensure_ascii=False).encode('utf8')).hexdigest()
 		])
 		if 'children' in item:
@@ -198,21 +195,27 @@ def removeDuplicatesOfComparsionModel(model):
 	oldModel = model['previous']
 	modelKeys = list(newModel.keys())
 	tag = False
+	tagWeight = 0
 
 	for key in modelKeys:
 		for i in range(len(newModel[key])):
 			item = newModel[key][i]
 			if tag:
 				if '/' + tag == item[0]:
-					tag = False
+					tagWeight -= 1
+					if tagWeight == 0:
+						tag = False
+				elif item[0] == tag and len(item) >= 3 and item[2]:
+					tagWeight += 1
 				newModel[key][i] = ''
 			else:
 				for j in range(len(oldModel[key])):
 					subitem = oldModel[key][j]
 					if not tag:
-						if len(item) >= 2 and len(subitem) >= 2 and item[1] == subitem[1]:
+						if len(item) >= 2 and len(subitem) >= 2 and item[1] == subitem[1] and item[0] == subitem[0]:
 							if len(item) >= 3 and len(subitem) >= 3 and item[2] == subitem[2] and item[2]:
 								tag = subitem[0]
+								tagWeight = 1
 								oldModel[key][j] = ''
 								newModel[key][i] = ''
 							elif len(item) >= 3 and len(subitem) >= 3 and not item[2]:
@@ -220,10 +223,15 @@ def removeDuplicatesOfComparsionModel(model):
 								newModel[key][i] = ''
 								break
 					else:
+						if len(subitem) >= 1 and '/' + tag == subitem[0]:
+							tagWeight -= 1
+							if tagWeight == 0:
+								oldModel[key][j] = ''
+								tagWeight = 1
+								break
+						elif len(subitem) >= 3 and subitem[0] == tag and subitem[2]:
+							tagWeight += 1
 						oldModel[key][j] = ''
-						if '/' + tag == subitem[0]:
-							print(tag)
-							break
 		clearArray(newModel[key])
 		clearArray(oldModel[key])
 	return model
@@ -244,6 +252,15 @@ def addLabelsForNewTags(model):
 			item = newModel[key][i]
 			for j in range(len(oldModel[key])):
 				subitem = oldModel[key][j]
+				if item[0] == subitem[0]:
+					if item[1] == subitem[1]:
+						
+				elif item[1] == subitem[1]:
+					# <-------------------------------------------------------------------------------------------------------------
+				else:
+					# <-------------------------------------------------------------------------------------------------------------
+
+				
 	return model
 
 def handleChangedBlocksOfComparsionModel(model):
@@ -420,19 +437,18 @@ def getListOfFiles(dir, extentions):
 						list.append(root + '/' + filename)
 	return list
 
-def logJsonToFile(JsonData, filepath = 'out.txt'):
-	file = open(filepath, 'w+')
+def toFile(data, filepath, mode):
+	file = open(filepath, mode)
 	file.seek(0)
-	file.write(json.dumps(JsonData))
+	file.write(data)
 	file.truncate()
 	file.close()
 
+def logJsonToFile(data, filepath = 'out.txt'):
+	toFile(json.dumps(data), filepath, 'w+')
+
 def saveToFile(JsonData, filepath = 'saved.testablerc'):
-	file = open(filepath, 'wb')
-	file.seek(0)
-	file.write(zlib.compress(json.dumps(JsonData).encode("utf-8")))
-	file.truncate()
-	file.close()
+	toFile(zlib.compress(json.dumps(JsonData).encode("utf-8")), filepath, 'wb')
 
 def loadFromFile(filepath = 'saved.testablerc'):
 	file = open(filepath, 'rb')
@@ -450,15 +466,15 @@ def main():
 	withTestableLabels = firstSetOfTestableLabels(minimisedJSXDictionary)
 	listJSX = makeListFromDict(withTestableLabels, recfuncMakeListFromDict)
 	oldJSXDictionary = loadFromFile()
-	#changedFilesList = getListOfChangedFiles(minimisedJSXDictionary, oldJSXDictionary)
-	#oldVersionChangedFiles
+	# changedFilesList = getListOfChangedFiles(minimisedJSXDictionary, oldJSXDictionary)
+	# oldVersionChangedFiles
 	# getChangedBlocksOfFiles(changedFiles, oldJSXDictionary)
 	# logJsonToFile(getChangedFiles(minimisedJSXDictionary, oldJSXDictionary))
 	comparsionModel = getChangedFiles(minimisedJSXDictionary, oldJSXDictionary)
 	logJsonToFile(handleChangedBlocksOfComparsionModel(comparsionModel))
 	# logJsonToFile(comparsionModel)
-	#dependencyAnalyzer(loadFromFile(), minimisedJSXDictionary)
-	#addTestableToDOM(listJSX)
+	# dependencyAnalyzer(loadFromFile(), minimisedJSXDictionary)
+	# addTestableToDOM(listJSX)
 	# saveToFile(minimisedJSXDictionary)
 	generateAutomationTestLabel()
 
